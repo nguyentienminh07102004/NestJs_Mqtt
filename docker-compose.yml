@@ -1,0 +1,27 @@
+services:
+  mqtt3:
+    image: eclipse-mosquitto:2.0.22
+    container_name: mqtt3_js
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./config:/mosquitto/config:rw
+      - ./data:/mosquitto/data:rw
+      - ./log:/mosquitto/log:rw
+    restart: unless-stopped
+  postgres:
+    container_name: mqtt_postgres_js
+    image: postgres:17.3
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      PGDATA: /var/lib/postgresql/data
+      POSTGRES_DB: MQTT
+    volumes:
+      - mqttjs_postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+volumes:
+  mqttjs_postgres:
