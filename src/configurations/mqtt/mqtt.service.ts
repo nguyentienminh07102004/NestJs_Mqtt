@@ -24,12 +24,6 @@ export const MqttProvider = {
       mqttClient.subscribe('control-device', { qos });
     });
 
-    mqttClient.on('message', (topic: string, payload: Buffer) => {
-      if (topic === 'topic/sendData') {
-        console.log('Received Message:', topic, payload.toString());
-      }
-    });
-
     return mqttClient;
   },
 };

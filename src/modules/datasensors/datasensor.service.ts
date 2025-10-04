@@ -1,5 +1,7 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { MqttClient } from 'mqtt';
+import { SocketIOService } from 'src/configurations/socketio/SocketIO.config';
 import { DataSource, Repository } from 'typeorm';
 import { DataSensor } from './datasensor.entity';
 import {
@@ -8,11 +10,24 @@ import {
 } from './datasensor.requestdto';
 
 @Injectable()
-export class DataSensorService {
+export class DataSensorService implements OnModuleInit {
   @InjectRepository(DataSensor)
   private readonly dataSensorRepository: Repository<DataSensor>;
   @Inject()
   private readonly dataSource: DataSource;
+  @Inject('MQTT_CLIENT')
+  private readonly mqttClient: MqttClient;
+  @Inject()
+  private readonly socketIOService: SocketIOService;
+  onModuleInit() {
+    this.mqttClient.on('message', async (topic: string, payload: Buffer) => {
+      if (topic === 'topic/sendData') {
+        const data: DataSensorRequestDto = JSON.parse(payload.toString());
+        await this.createDataSensor(data);
+        this.socketIOService.sendDataToClients(data);
+      }
+    });
+  }
 
   async createDataSensor(data: DataSensorRequestDto) {
     const dataSensor = this.dataSensorRepository.create(data);
