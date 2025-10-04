@@ -1,11 +1,20 @@
 import { Module } from '@nestjs/common';
-import { PostgresConfiguration } from './configurations/database.config';
-import { MqttService } from './configurations/mqtt.config';
+import { PostgresConfiguration } from './configurations/database/database.config';
+import { DataHistoryModule } from './modules/datahistory/datahistory.module';
 import { DataSensorModule } from './modules/datasensors/datasensor.module';
+import { SocketIOModule } from './configurations/socketio/SocketIO.module';
+import { MqttModule } from './configurations/mqtt/MqttModule.module';
 
 @Module({
-  imports: [PostgresConfiguration, DataSensorModule],
+  imports: [
+    PostgresConfiguration,
+    DataSensorModule,
+    DataHistoryModule,
+    SocketIOModule,
+    MqttModule
+  ],
   controllers: [],
-  providers: [MqttService],
+  providers: [],
+  exports: [],
 })
 export class AppModule {}
