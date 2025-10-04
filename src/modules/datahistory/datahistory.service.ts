@@ -33,24 +33,25 @@ export class DataHistoryService {
         try {
           if (topic === subscribeTopic) {
             clearTimeout(timeout);
-            status = message.toString() as 'ON' | 'OFF';
             const dataHistory = this.dataSource
               .getRepository(DataHistory)
               .create({
                 deviceName: device,
-                status,
+                status: message.toString().toUpperCase() as 'ON' | 'OFF',
               });
             await this.dataSource.getRepository(DataHistory).save(dataHistory);
             this.mqttClient.unsubscribe(subscribeTopic);
+            this.mqttClient.removeListener('message', onMessage);
             resolve(dataHistory);
           }
         } catch (err) {
           clearTimeout(timeout);
           this.mqttClient.unsubscribe(subscribeTopic);
+          this.mqttClient.removeListener('message', onMessage);
           reject(err);
         }
       };
-      this.mqttClient.once('message', onMessage);
+      this.mqttClient.on('message', onMessage);
     });
   }
 }
