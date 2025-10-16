@@ -9,6 +9,6 @@ export class DataSensorController {
 
     @Get('search')
     async getAllDataSensors(@Query() query: DataSensorQueryDto) {
-        await this.dataSensorService.getAllDataSensors(query);
+        return await this.dataSensorService.getAllDataSensors(query);
     }
 }

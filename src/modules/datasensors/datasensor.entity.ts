@@ -11,5 +11,5 @@ export class DataSensor {
   @Column({ nullable: false, type: 'float' })
   brightness: number;
   @Column({ nullable: false, default: () => 'NOW()' })
-  timestamp: Date;
+  createdDate: Date;
 }

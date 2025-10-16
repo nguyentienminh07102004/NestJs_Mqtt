@@ -54,28 +54,16 @@ export class DataSensorService implements OnModuleInit {
         endTime = new Date(startTime.getTime() + 86399999);
       }
     }
-    if (!query.sort) query.sort = 'createdDate-DESC';
-    const [sortBy, sortOrder] = query.sort.split('-');
+    if (!query.sortBy) query.sortBy = 'createdDate';
+    if (!query.sort) query.sort = 'DESC';
     // ép kiểu trong postgres
-    const res = await this.dataSource.manager.query(
-      `
-        SELECT *
-        FROM datasensors
-        WHERE
-            ${query.type} = COALESCE(NULLIF($1, ''), ${query.type}) 
-            AND createdDate >= COALESCE($2::timestamp, createdDate)
-            AND createdDate <= COALESCE($3::timestamp, createdDate)
-        ORDER BY ${sortBy} ${sortOrder}
-        LIMIT $4 OFFSET $5;
-        `,
-      [
-        query.type,
-        startTime,
-        endTime,
-        query.limit,
-        (query.page - 1) * query.limit,
-      ],
-    );
-    console.log(res);
+    const res = await this.dataSource.getRepository(DataSensor)
+      .createQueryBuilder('ds')
+      .where(startTime && endTime ? 'ds."createdDate" BETWEEN :startTime AND :endTime' : '1=1', { startTime, endTime })
+      .orderBy(`ds."${query.sortBy}"`, query.sort?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC')
+      .skip((query.page - 1) * query.limit)
+      .take(query.limit)
+      .getMany();
+    console.log('res: ', res);
   }
 }
