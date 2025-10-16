@@ -9,6 +9,6 @@ export class DataSensorQueryDto {
     limit: number;
     sort: string;
     time: string;
-    type: "himidity" | "temperature" | "brightness" | "";
+    type: "himidity" | "temperature" | "brightness" | "timestamp" | "";
     value?: number;
 } 

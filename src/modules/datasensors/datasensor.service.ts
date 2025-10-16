@@ -2,7 +2,15 @@ import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MqttClient } from 'mqtt';
 import { SocketIOService } from 'src/configurations/socketio/SocketIO.config';
-import { DataSource, Repository } from 'typeorm';
+import {
+  Between,
+  DataSource,
+  Equal,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  Or,
+  Repository,
+} from 'typeorm';
 import { DataSensor } from './datasensor.entity';
 import {
   DataSensorQueryDto,
@@ -54,28 +62,49 @@ export class DataSensorService implements OnModuleInit {
         endTime = new Date(startTime.getTime() + 86399999);
       }
     }
-    if (!query.sort) query.sort = 'createdDate-DESC';
+    if (!query.sort) query.sort = 'timestamp-DESC';
     const [sortBy, sortOrder] = query.sort.split('-');
-    // ép kiểu trong postgres
-    const res = await this.dataSource.manager.query(
-      `
-        SELECT *
-        FROM datasensors
-        WHERE
-            ${query.type} = COALESCE(NULLIF($1, ''), ${query.type}) 
-            AND createdDate >= COALESCE($2::timestamp, createdDate)
-            AND createdDate <= COALESCE($3::timestamp, createdDate)
-        ORDER BY ${sortBy} ${sortOrder}
-        LIMIT $4 OFFSET $5;
-        `,
-      [
-        query.type,
-        startTime,
-        endTime,
-        query.limit,
-        (query.page - 1) * query.limit,
-      ],
-    );
-    console.log(res);
+    let filter = {};
+    if (startTime || endTime) {
+      if (startTime && endTime) {
+        filter['timestamp'] = Between(startTime, endTime);
+      } else if (startTime) {
+        filter['timestamp'] = MoreThanOrEqual(startTime);
+      } else if (endTime) {
+        filter['timestamp'] = LessThanOrEqual(endTime);
+      }
+    }
+    if (query.type && query.type !== 'timestamp') {
+      if (query.value) {
+        filter[query.type] = Equal(Number(query.value));
+      }
+    } else if (!query.type) {
+      if (query.value) {
+        filter = [
+          { ...filter, temperature: query.value },
+          { ...filter, humidity: query.value },
+          { ...filter, brightness: query.value },
+        ];
+      }
+    }
+    const [data, totalElements] = await this.dataSource
+      .getRepository(DataSensor)
+      .findAndCount({
+        where: filter,
+        order: {
+          [sortBy]: sortOrder.toUpperCase() === 'DESC' ? 'DESC' : 'ASC',
+        },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      });
+    return {
+      content: data,
+      page: {
+        totalElements,
+        totalPages: Math.ceil(totalElements / query.limit),
+        number: query.page,
+        size: query.limit,
+      },
+    };
   }
 }

@@ -1,206 +1,107 @@
-import { useEffect, useState } from "react";
-import { Table, Input, Button, Select, Space, message, Tooltip } from "antd";
-import { CopyOutlined, SearchOutlined, ArrowUpOutlined, ArrowDownOutlined } from "@ant-design/icons";
+import {
+  CopyOutlined
+} from '@ant-design/icons';
+import { message, Space, Table, Tooltip } from 'antd';
+import React from 'react';
+import { useSearchParams } from 'react-router-dom';
+import SearchSensorComponent from '../components/SearchSensorComponent';
+import { API_BASE_URL } from '../configuration/App.constant';
+import type { PagedModel } from '../types/PagedModel';
 
-type SensorRecord = {
-	id: string;
-	temperature: string;
-	humidity: string;
-	brightness: string;
-	createdDate: string;
+type SensorData = {
+  id: string;
+  temperature: string;
+  humidity: string;
+  light: string;
+  time: string;
 };
 
 export default function Sensor() {
-	const [searchField, setSearchField] = useState("all");
-	const [searchValue, setSearchValue] = useState("");
-	const [loading, setLoading] = useState(false);
-	const [limit, setLimit] = useState(5);
-	const [page, setPage] = useState(1);
-	const [sortBy, setSortBy] = useState<keyof SensorRecord | "">("");
-	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-	const [total, setTotal] = useState(0);
-	const [allData, setAllData] = useState<SensorRecord[]>([]);
+  const [urlSearchParams] = useSearchParams();
+  const [data, setData] = React.useState<PagedModel<SensorData>>({
+    content: [],
+    page: { totalElements: 0, totalPages: 0, number: 1, size: 10 },
+  });
+  const fetchData = async () => {
+    const page = urlSearchParams.get('page') || '1';
+    const limit = urlSearchParams.get('limit') || '10';
+    const type = urlSearchParams.get('type');
+    const sort = urlSearchParams.get('sort');
+    const value = urlSearchParams.get('value');
+    let url = `${API_BASE_URL}/datasensors?page=${page}&limit=${limit}`;
+    if (value) url = `${url}&value=${value}`;
+    if (sort) url = `${url}&sort=${sort}`;
+    if (type) url = `${url}&type=${type}`;
+    const response: PagedModel<SensorData> = await (await fetch(url)).json();
+    setData(response);
+  };
+  React.useEffect(() => {
+    fetchData();
+  }, [urlSearchParams]);
 
-	const fetchData = async () => {
-		setLoading(true);
-		try {
-			const params = new URLSearchParams({
-				page: page.toString(),
-				limit: limit.toString(),
-				sort: sortOrder.toUpperCase(),
-				sortBy: sortBy || "createdDate",
-				type: searchField,
-				value: searchValue,
-			});
-			const res = await fetch(`http://localhost:3000/api/v1/datasensors/search?${params}`);
-			const json = await res.json();
-			setAllData(json.data || []);
-			setTotal(json.total || 0);
-		} catch (err) {
-			console.error(err);
-			message.error("Không thể tải dữ liệu cảm biến");
-		} finally {
-			setLoading(false);
-		}
-	};
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    message.success(`Đã copy: ${text}`);
+  };
 
-	useEffect(() => {
-		fetchData();
-	}, [page, limit, sortBy, sortOrder]);
+  const columns = [
+    { title: 'ID', dataIndex: 'id', key: 'id' },
+    {
+      title: (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          Nhiệt độ
+        </div>
+      ),
+      dataIndex: 'temperature',
+      key: 'temperature',
+    },
+    {
+      title: (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          Độ ẩm
+        </div>
+      ),
+      dataIndex: 'humidity',
+      key: 'humidity',
+    },
+    {
+      title: (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          Ánh sáng
+        </div>
+      ),
+      dataIndex: 'brightness',
+      key: 'brightness',
+    },
+    {
+      title: (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          Thời gian
+        </div>
+      ),
+      dataIndex: 'timestamp',
+      key: 'timestamp',
+      render: (text: string) => (
+        <Space>
+          <span>{text}</span>
+          <Tooltip title="Copy thời gian">
+            <CopyOutlined
+              onClick={() => handleCopy(text)}
+              style={{ cursor: 'pointer', color: '#1677ff' }}
+            />
+          </Tooltip>
+        </Space>
+      ),
+    },
+  ];
 
-	const handleCopy = (text: string) => {
-		navigator.clipboard.writeText(text);
-		message.success(`Đã copy: ${text}`);
-	};
-
-	const handleSearch = () => {
-		setPage(1);
-		fetchData();
-	};
-
-	const toggleSort = (field: keyof SensorRecord) => {
-		if (sortBy === field) {
-			setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-		} else {
-			setSortBy(field);
-			setSortOrder("asc");
-		}
-	};
-
-	const columns = [
-		{ title: "ID", dataIndex: "id", key: "id" },
-		{
-			title: (
-				<div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-					Nhiệt độ
-					<span onClick={() => toggleSort("temperature")} style={{ cursor: "pointer" }}>
-						{sortBy === "temperature" ? (
-							sortOrder === "asc" ? <ArrowUpOutlined /> : <ArrowDownOutlined />
-						) : (
-							<ArrowUpOutlined style={{ opacity: 0.3 }} />
-						)}
-					</span>
-				</div>
-			),
-			dataIndex: "temperature",
-			key: "temperature",
-		},
-		{
-			title: (
-				<div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-					Độ ẩm
-					<span onClick={() => toggleSort("humidity")} style={{ cursor: "pointer" }}>
-						{sortBy === "humidity" ? (
-							sortOrder === "asc" ? <ArrowUpOutlined /> : <ArrowDownOutlined />
-						) : (
-							<ArrowUpOutlined style={{ opacity: 0.3 }} />
-						)}
-					</span>
-				</div>
-			),
-			dataIndex: "humidity",
-			key: "humidity",
-		},
-		{
-			title: (
-				<div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-					Ánh sáng
-					<span onClick={() => toggleSort("brightness")} style={{ cursor: "pointer" }}>
-						{sortBy === "brightness" ? (
-							sortOrder === "asc" ? <ArrowUpOutlined /> : <ArrowDownOutlined />
-						) : (
-							<ArrowUpOutlined style={{ opacity: 0.3 }} />
-						)}
-					</span>
-				</div>
-			),
-			dataIndex: "brightness",
-			key: "brightness",
-		},
-		{
-			title: (
-				<div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-					Thời gian
-					<span onClick={() => toggleSort("createdDate")} style={{ cursor: "pointer" }}>
-						{sortBy === "createdDate" ? (
-							sortOrder === "asc" ? <ArrowUpOutlined /> : <ArrowDownOutlined />
-						) : (
-							<ArrowUpOutlined style={{ opacity: 0.3 }} />
-						)}
-					</span>
-				</div>
-			),
-			dataIndex: "createdDate",
-			key: "createdDate",
-			render: (text: string) => (
-				<Space>
-					<span>{text}</span>
-					<Tooltip title="Copy thời gian">
-						<CopyOutlined onClick={() => handleCopy(text)} style={{ cursor: "pointer", color: "#1677ff" }} />
-					</Tooltip>
-				</Space>
-			),
-		},
-	];
-
-	return (
-		<div>
-			<h1 style={{ fontSize: 20, fontWeight: 600, marginBottom: 16 }}>📊 Lịch sử cảm biến</h1>
-
-			<Space style={{ marginBottom: 16 }} wrap>
-				<Select
-					value={searchField}
-					onChange={setSearchField}
-					style={{ width: 180 }}
-					options={[
-						{ value: "all", label: "Tất cả" },
-						{ value: "temperature", label: "Nhiệt độ" },
-						{ value: "humidity", label: "Độ ẩm" },
-						{ value: "brightness", label: "Ánh sáng" },
-						{ value: "createdDate", label: "Thời gian" },
-					]}
-				/>
-
-				<Input
-					placeholder="Nhập từ khóa tìm kiếm..."
-					value={searchValue}
-					onChange={(e) => setSearchValue(e.target.value)}
-					style={{ width: 260 }}
-				/>
-
-				<Button type="primary" icon={<SearchOutlined />} onClick={handleSearch} loading={loading}>
-					Tìm kiếm
-				</Button>
-
-				<Select
-					value={limit}
-					onChange={(value) => {
-						setLimit(value);
-						setPage(1);
-					}}
-					style={{ width: 200 }}
-					options={[
-						{ value: 3, label: "Hiển thị 3 dòng / trang" },
-						{ value: 5, label: "Hiển thị 5 dòng / trang" },
-						{ value: 10, label: "Hiển thị 10 dòng / trang" },
-					]}
-				/>
-			</Space>
-
-			<Table
-				columns={columns}
-				dataSource={allData}
-				rowKey="id"
-				bordered
-				loading={loading}
-				pagination={{
-					current: page,
-					pageSize: limit,
-					total: total,
-					onChange: (p) => setPage(p),
-					showSizeChanger: false,
-				}}
-			/>
-		</div>
-	);
+  return (
+    <div>
+      <h1 style={{ fontSize: 20, fontWeight: 600, marginBottom: 16 }}>
+        Lịch sử cảm biến
+      </h1>
+      <SearchSensorComponent totalElements={data.page.totalElements || 0} />
+      <Table pagination={false} columns={columns} dataSource={data.content} rowKey="id" bordered />
+    </div>
+  );
 }
