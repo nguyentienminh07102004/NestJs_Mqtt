@@ -22,6 +22,7 @@ export const MqttProvider = {
       console.log('Connected to MQTT broker');
       mqttClient.subscribe('topic/sendData', { qos });
       mqttClient.subscribe('control-device', { qos });
+      mqttClient.subscribe('setupDevice', { qos });
     });
 
     return mqttClient;
