@@ -31,8 +31,8 @@ export class DataSensorService implements OnModuleInit {
     this.mqttClient.on('message', async (topic: string, payload: Buffer) => {
       if (topic === 'topic/sendData') {
         const data: DataSensorRequestDto = JSON.parse(payload.toString());
-        await this.createDataSensor(data);
-        this.socketIOService.sendDataToClients(data);
+        const dataSensor = await this.createDataSensor(data);
+        this.socketIOService.sendDataToClients(dataSensor);
       }
     });
   }
@@ -47,18 +47,18 @@ export class DataSensorService implements OnModuleInit {
     if (!query.limit || query.limit < 1) query.limit = 10;
     let startTime: Date | null = null;
     let endTime: Date | null = null;
-    if (query.time) {
-      if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(query.time)) {
-        startTime = new Date(query.time);
+    if (query.type === "timestamp" && query.value) {
+      if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(query.value)) {
+        startTime = new Date(query.value);
         endTime = new Date(startTime.getTime() + 999);
-      } else if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(query.time)) {
-        startTime = new Date(query.time + ':00');
+      } else if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(query.value)) {
+        startTime = new Date(query.value + ':00');
         endTime = new Date(startTime.getTime() + 59999);
-      } else if (/^\d{4}-\d{2}-\d{2} \d{2}$/.test(query.time)) {
-        startTime = new Date(query.time + ':00:00');
+      } else if (/^\d{4}-\d{2}-\d{2} \d{2}$/.test(query.value)) {
+        startTime = new Date(query.value + ':00:00');
         endTime = new Date(startTime.getTime() + 3599999);
-      } else if (/^\d{4}-\d{2}-\d{2}$/.test(query.time)) {
-        startTime = new Date(query.time + ' 00:00:00');
+      } else if (/^\d{4}-\d{2}-\d{2}$/.test(query.value)) {
+        startTime = new Date(query.value + ' 00:00:00');
         endTime = new Date(startTime.getTime() + 86399999);
       }
     }
@@ -87,6 +87,7 @@ export class DataSensorService implements OnModuleInit {
         ];
       }
     }
+    console.log(filter)
     const [data, totalElements] = await this.dataSource
       .getRepository(DataSensor)
       .findAndCount({

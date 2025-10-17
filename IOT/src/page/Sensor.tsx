@@ -1,7 +1,5 @@
-import {
-  CopyOutlined
-} from '@ant-design/icons';
-import { message, Space, Table, Tooltip } from 'antd';
+import { CopyOutlined } from '@ant-design/icons';
+import { Space, Table, Tooltip } from 'antd';
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import SearchSensorComponent from '../components/SearchSensorComponent';
@@ -15,6 +13,16 @@ type SensorData = {
   light: string;
   time: string;
 };
+
+export function formatDate(date: Date): string {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  const hh = String(date.getHours()).padStart(2, '0');
+  const mi = String(date.getMinutes()).padStart(2, '0');
+  const ss = String(date.getSeconds()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+}
 
 export default function Sensor() {
   const [urlSearchParams] = useSearchParams();
@@ -40,8 +48,8 @@ export default function Sensor() {
   }, [urlSearchParams]);
 
   const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    message.success(`Đã copy: ${text}`);
+    const timestamp = new Date(text);
+    navigator.clipboard.writeText(formatDate(timestamp));
   };
 
   const columns = [
@@ -83,7 +91,7 @@ export default function Sensor() {
       key: 'timestamp',
       render: (text: string) => (
         <Space>
-          <span>{text}</span>
+          <span>{formatDate(new Date(text))}</span>
           <Tooltip title="Copy thời gian">
             <CopyOutlined
               onClick={() => handleCopy(text)}
@@ -101,7 +109,13 @@ export default function Sensor() {
         Lịch sử cảm biến
       </h1>
       <SearchSensorComponent totalElements={data.page.totalElements || 0} />
-      <Table pagination={false} columns={columns} dataSource={data.content} rowKey="id" bordered />
+      <Table
+        pagination={false}
+        columns={columns}
+        dataSource={data.content}
+        rowKey="id"
+        bordered
+      />
     </div>
   );
 }

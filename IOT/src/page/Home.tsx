@@ -1,5 +1,5 @@
-import { Card, Row, Col, Switch, Tag } from "antd";
-import { useEffect, useState } from "react";
+import { Card, Row, Col, Switch, Tag } from 'antd';
+import { useEffect, useState } from 'react';
 import {
   Thermometer,
   Droplets,
@@ -7,7 +7,7 @@ import {
   Fan,
   Lightbulb,
   AirVent,
-} from "lucide-react";
+} from 'lucide-react';
 import {
   LineChart,
   Line,
@@ -17,73 +17,61 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from "recharts";
+} from 'recharts';
+import SocketIOConfiguration from '../configuration/SocketIOConfiguration';
 
 type Sensor = {
   id: number;
   temperature: number;
   humidity: number;
-  light: number;
-  time: string;
+  brightness: number;
+  timestamp: string;
 };
-
+type DeviceState = {
+  fan: boolean;
+  air_conditioner: boolean;
+  led: boolean;
+};
 export default function Home() {
   const [data, setData] = useState<Sensor[]>([]);
-  const [deviceState, setDeviceState] = useState({
+  const [deviceState, setDeviceState] = useState<DeviceState>({
     fan: false,
-    air: false,
-    light: false,
+    air_conditioner: false,
+    led: false,
   });
+  const io = SocketIOConfiguration;
 
   const getStatusColor = (type: string, value: number) => {
-    if (type === "temperature") {
-      if (value < 20) return "blue";
-      if (value > 35) return "red";
-      return "green";
-    } else if (type === "humidity") {
-      if (value < 40) return "orange";
-      if (value > 80) return "blue";
-      return "green";
-    } else if (type === "light") {
-      if (value < 200) return "gray";
-      if (value > 600) return "yellow";
-      return "green";
+    if (type === 'temperature') {
+      if (value < 20) return 'blue';
+      if (value > 35) return 'red';
+      return 'green';
+    } else if (type === 'humidity') {
+      if (value < 40) return 'orange';
+      if (value > 80) return 'blue';
+      return 'green';
+    } else if (type === 'brightness') {
+      if (value < 200) return 'gray';
+      if (value > 600) return 'yellow';
+      return 'green';
     }
   };
-
-  // fake ra 10 data ban đầu
-  useEffect(() => {
-    const initData: Sensor[] = Array.from({ length: 10 }).map((_, i) => ({
-      id: i,
-      temperature: 25 + Math.random() * 10,
-      humidity: 50 + Math.random() * 30,
-      light: 200 + Math.random() * 500,
-      time: `${9 + Math.floor(i / 2)}:${(i % 2) * 30 === 0 ? "00" : "30"}`,
-    }));
-    setData(initData);
-  }, []);
-
   // realtime update mỗi 3s
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
-      const newData: Sensor = {
-        id: now.getTime(),
-        temperature: 25 + Math.random() * 10,
-        humidity: 50 + Math.random() * 30,
-        light: 200 + Math.random() * 500,
-        time: now.toLocaleTimeString("vi-VN", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      };
+    io.connect();
+    io.on('topic/sendData', (newData: Sensor) => {
       setData((prev) => [...prev.slice(-9), newData]);
-    }, 3000);
-    return () => clearInterval(interval);
+    });
   }, []);
-
-  if (data.length === 0) return null;
-  const latest = data[data.length - 1];
+  const latest = data.length
+    ? data[data.length - 1]
+    : {
+        temperature: 0,
+        humidity: 0,
+        brightness: 0,
+        id: 0,
+        timestamp: '',
+      };
 
   // Animation inline
   const keyframes = `
@@ -94,82 +82,84 @@ export default function Home() {
   return (
     <div
       style={{
-        height: "100%", // full trong Content
+        height: '100%', // full trong Content
         padding: 24,
-        display: "flex",
-        flexDirection: "column",
+        display: 'flex',
+        flexDirection: 'column',
         gap: 24,
-        background: "#f5f6fa",
-        overflow: "hidden", // tránh scroll
+        background: '#f5f6fa',
+        overflow: 'hidden', // tránh scroll
       }}
     >
       <style>{keyframes}</style>
 
-      {/* Hàng 1: 3 ô realtime */}
       <Row gutter={24} style={{ flexShrink: 0 }}>
         {[
           {
-            label: "Nhiệt độ",
+            label: 'Nhiệt độ',
             value: latest.temperature,
             icon: (
               <Thermometer
-                color={getStatusColor("temperature", latest.temperature)}
+                color={getStatusColor('temperature', latest.temperature)}
                 size={28}
               />
             ),
-            unit: "°C",
-            color: getStatusColor("temperature", latest.temperature),
+            unit: '°C',
+            color: getStatusColor('temperature', latest.temperature),
             status:
               latest.temperature < 20
-                ? "Thấp"
+                ? 'Thấp'
                 : latest.temperature > 35
-                ? "Cao"
-                : "Bình thường",
+                  ? 'Cao'
+                  : 'Bình thường',
           },
           {
-            label: "Độ ẩm",
+            label: 'Độ ẩm',
             value: latest.humidity,
             icon: (
               <Droplets
-                color={getStatusColor("humidity", latest.humidity)}
+                color={getStatusColor('humidity', latest.humidity)}
                 size={28}
               />
             ),
-            unit: "%",
-            color: getStatusColor("humidity", latest.humidity),
+            unit: '%',
+            color: getStatusColor('humidity', latest.humidity),
             status:
               latest.humidity < 40
-                ? "Thấp"
+                ? 'Thấp'
                 : latest.humidity > 80
-                ? "Cao"
-                : "Bình thường",
+                  ? 'Cao'
+                  : 'Bình thường',
           },
           {
-            label: "Ánh sáng",
-            value: latest.light,
+            label: 'Ánh sáng',
+            value: latest.brightness,
             icon: (
-              <Sun color={getStatusColor("light", latest.light)} size={28} />
+              <Sun
+                color={getStatusColor('brightness', latest.brightness)}
+                size={28}
+              />
             ),
-            unit: "Lux",
-            color: getStatusColor("light", latest.light),
+            unit: 'Lux',
+            color: getStatusColor('brightness', latest.brightness),
             status:
-              latest.light < 200
-                ? "Tối"
-                : latest.light > 600
-                ? "Chói"
-                : "Bình thường",
+              latest.brightness < 200
+                ? 'Tối'
+                : latest.brightness > 600
+                  ? 'Chói'
+                  : 'Bình thường',
           },
         ].map((item, index) => (
           <Col span={8} key={index}>
             <Card>
               <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   {item.icon}
                   <div>
                     <p style={{ margin: 0 }}>{item.label}</p>
@@ -185,18 +175,17 @@ export default function Home() {
         ))}
       </Row>
 
-      {/* Hàng 2: Biểu đồ + Điều khiển */}
       <Row gutter={24} style={{ flex: 1, minHeight: 0 }}>
-        <Col span={16} style={{ height: "100%" }}>
+        <Col span={16} style={{ height: '100%' }}>
           <Card
             title="Biểu đồ dữ liệu cảm biến (10 lần gần nhất)"
-            style={{ height: "100%" }}
-            bodyStyle={{ height: "calc(100% - 48px)" }}
+            style={{ height: '100%' }}
+            bodyStyle={{ height: 'calc(100% - 48px)' }}
           >
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="time" />
+                <XAxis dataKey="timestamp" />
                 <YAxis />
                 <Tooltip />
                 <Legend />
@@ -214,7 +203,7 @@ export default function Home() {
                 />
                 <Line
                   type="monotone"
-                  dataKey="light"
+                  dataKey="brightness"
                   stroke="#fadb14"
                   name="Ánh sáng (Lux)"
                 />
@@ -223,49 +212,49 @@ export default function Home() {
           </Card>
         </Col>
 
-        <Col span={8} style={{ height: "100%" }}>
-          <Card title="Điều khiển thiết bị" style={{ height: "100%" }}>
+        <Col span={8} style={{ height: '100%' }}>
+          <Card title="Điều khiển thiết bị" style={{ height: '100%' }}>
             {[
               {
-                key: "fan",
-                name: "Quạt",
+                key: 'fan',
+                name: 'Quạt',
                 icon: (
                   <Fan
                     size={26}
-                    color={deviceState.fan ? "#52c41a" : "#999"}
+                    color={deviceState.fan ? '#52c41a' : '#999'}
                     style={
                       deviceState.fan
-                        ? { animation: "spin 1s linear infinite" }
+                        ? { animation: 'spin 1s linear infinite' }
                         : {}
                     }
                   />
                 ),
               },
               {
-                key: "air",
-                name: "Điều hòa",
+                key: 'air_conditioner',
+                name: 'Điều hòa',
                 icon: (
                   <AirVent
                     size={26}
-                    color={deviceState.air ? "#1890ff" : "#999"}
+                    color={deviceState.air_conditioner ? '#1890ff' : '#999'}
                     style={
-                      deviceState.air
-                        ? { animation: "pulse 1.5s infinite" }
+                      deviceState.air_conditioner
+                        ? { animation: 'pulse 1.5s infinite' }
                         : {}
                     }
                   />
                 ),
               },
               {
-                key: "light",
-                name: "Đèn",
+                key: 'led',
+                name: 'Đèn',
                 icon: (
                   <Lightbulb
                     size={26}
-                    color={deviceState.light ? "#faad14" : "#999"}
+                    color={deviceState.led ? '#faad14' : '#999'}
                     style={
-                      deviceState.light
-                        ? { filter: "drop-shadow(0 0 6px #ffd666)" }
+                      deviceState.led
+                        ? { filter: 'drop-shadow(0 0 6px #ffd666)' }
                         : {}
                     }
                   />
@@ -275,20 +264,20 @@ export default function Home() {
               <div
                 key={device.key}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "12px 16px",
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 16px',
                   marginBottom: 16,
                   borderRadius: 12,
-                  background: "#fff",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                  background: '#fff',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
                 }}
               >
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: 10,
                     fontWeight: 500,
                   }}
@@ -297,13 +286,21 @@ export default function Home() {
                   <span>{device.name}</span>
                 </div>
                 <Switch
-                  checked={(deviceState as any)[device.key]}
-                  onChange={(checked) =>
-                    setDeviceState((prev) => ({
-                      ...prev,
-                      [device.key]: checked,
-                    }))
-                  }
+                  checked={deviceState[device.key as keyof DeviceState]}
+                  onChange={(checked) => {
+                    fetch(
+                      `http://localhost:3000/api/v1/datahistories/${device.key}/${checked ? 'ON' : 'OFF'}`,
+                      {
+                        method: 'POST',
+                      },
+                    ).then((response) => {
+                      if (!response.ok) return;
+                      setDeviceState((prev) => ({
+                        ...prev,
+                        [device.key]: checked,
+                      }));
+                    });
+                  }}
                 />
               </div>
             ))}
