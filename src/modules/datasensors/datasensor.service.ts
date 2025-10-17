@@ -2,7 +2,15 @@ import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MqttClient } from 'mqtt';
 import { SocketIOService } from 'src/configurations/socketio/SocketIO.config';
-import { DataSource, Repository } from 'typeorm';
+import {
+  Between,
+  DataSource,
+  Equal,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  Or,
+  Repository,
+} from 'typeorm';
 import { DataSensor } from './datasensor.entity';
 import {
   DataSensorQueryDto,
@@ -23,8 +31,8 @@ export class DataSensorService implements OnModuleInit {
     this.mqttClient.on('message', async (topic: string, payload: Buffer) => {
       if (topic === 'topic/sendData') {
         const data: DataSensorRequestDto = JSON.parse(payload.toString());
-        await this.createDataSensor(data);
-        this.socketIOService.sendDataToClients(data);
+        const dataSensor = await this.createDataSensor(data);
+        this.socketIOService.sendDataToClients(dataSensor);
       }
     });
   }
@@ -39,43 +47,65 @@ export class DataSensorService implements OnModuleInit {
     if (!query.limit || query.limit < 1) query.limit = 10;
     let startTime: Date | null = null;
     let endTime: Date | null = null;
-    if (query.time) {
-      if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(query.time)) {
-        startTime = new Date(query.time);
+    if (query.type === "timestamp" && query.value) {
+      if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(query.value)) {
+        startTime = new Date(query.value);
         endTime = new Date(startTime.getTime() + 999);
-      } else if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(query.time)) {
-        startTime = new Date(query.time + ':00');
+      } else if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(query.value)) {
+        startTime = new Date(query.value + ':00');
         endTime = new Date(startTime.getTime() + 59999);
-      } else if (/^\d{4}-\d{2}-\d{2} \d{2}$/.test(query.time)) {
-        startTime = new Date(query.time + ':00:00');
+      } else if (/^\d{4}-\d{2}-\d{2} \d{2}$/.test(query.value)) {
+        startTime = new Date(query.value + ':00:00');
         endTime = new Date(startTime.getTime() + 3599999);
-      } else if (/^\d{4}-\d{2}-\d{2}$/.test(query.time)) {
-        startTime = new Date(query.time + ' 00:00:00');
+      } else if (/^\d{4}-\d{2}-\d{2}$/.test(query.value)) {
+        startTime = new Date(query.value + ' 00:00:00');
         endTime = new Date(startTime.getTime() + 86399999);
       }
     }
-    if (!query.sort) query.sort = 'createdDate-DESC';
+    if (!query.sort) query.sort = 'timestamp-DESC';
     const [sortBy, sortOrder] = query.sort.split('-');
-    // ép kiểu trong postgres
-    const res = await this.dataSource.manager.query(
-      `
-        SELECT *
-        FROM datasensors
-        WHERE
-            ${query.type} = COALESCE(NULLIF($1, ''), ${query.type}) 
-            AND createdDate >= COALESCE($2::timestamp, createdDate)
-            AND createdDate <= COALESCE($3::timestamp, createdDate)
-        ORDER BY ${sortBy} ${sortOrder}
-        LIMIT $4 OFFSET $5;
-        `,
-      [
-        query.type,
-        startTime,
-        endTime,
-        query.limit,
-        (query.page - 1) * query.limit,
-      ],
-    );
-    console.log(res);
+    let filter = {};
+    if (startTime || endTime) {
+      if (startTime && endTime) {
+        filter['timestamp'] = Between(startTime, endTime);
+      } else if (startTime) {
+        filter['timestamp'] = MoreThanOrEqual(startTime);
+      } else if (endTime) {
+        filter['timestamp'] = LessThanOrEqual(endTime);
+      }
+    }
+    if (query.type && query.type !== 'timestamp') {
+      if (query.value) {
+        filter[query.type] = Equal(Number(query.value));
+      }
+    } else if (!query.type) {
+      if (query.value) {
+        filter = [
+          { ...filter, temperature: query.value },
+          { ...filter, humidity: query.value },
+          { ...filter, brightness: query.value },
+        ];
+      }
+    }
+    console.log(filter)
+    const [data, totalElements] = await this.dataSource
+      .getRepository(DataSensor)
+      .findAndCount({
+        where: filter,
+        order: {
+          [sortBy]: sortOrder.toUpperCase() === 'DESC' ? 'DESC' : 'ASC',
+        },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      });
+    return {
+      content: data,
+      page: {
+        totalElements,
+        totalPages: Math.ceil(totalElements / query.limit),
+        number: query.page,
+        size: query.limit,
+      },
+    };
   }
 }

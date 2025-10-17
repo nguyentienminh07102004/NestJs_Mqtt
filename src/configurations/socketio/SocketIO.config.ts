@@ -7,6 +7,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
+import { DataSensor } from 'src/modules/datasensors/datasensor.entity';
 
 @WebSocketGateway(9092, {
   cors: {
@@ -30,15 +31,7 @@ export class SocketIOService
     console.log('SocketIOService initialized');
   }
 
-  sendDataToClients({
-    temperature,
-    humidity,
-    brightness,
-  }: {
-    temperature: number;
-    humidity: number;
-    brightness: number;
-  }) {
-    this.server.emit('topic/sendData', { temperature, humidity, brightness });
+  sendDataToClients(dataSensor: DataSensor) {
+    this.server.emit('topic/sendData', dataSensor);
   }
 }

@@ -8,7 +8,6 @@ export class DataSensorQueryDto {
     page: number;
     limit: number;
     sort: string;
-    time: string;
-    type: "himidity" | "temperature" | "brightness" | "";
-    value?: number;
+    type: "himidity" | "temperature" | "brightness" | "timestamp" | "";
+    value?: string;
 } 

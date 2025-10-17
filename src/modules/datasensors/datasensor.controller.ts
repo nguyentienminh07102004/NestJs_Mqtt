@@ -7,8 +7,8 @@ export class DataSensorController {
     @Inject()
     private readonly dataSensorService: DataSensorService;
 
-    @Get('search')
+    @Get()
     async getAllDataSensors(@Query() query: DataSensorQueryDto) {
-        await this.dataSensorService.getAllDataSensors(query);
+        return await this.dataSensorService.getAllDataSensors(query);
     }
 }
