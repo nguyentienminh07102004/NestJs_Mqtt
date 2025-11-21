@@ -275,6 +275,24 @@ export default function Home() {
                   stroke="#fadb14"
                   name="Ánh sáng (Lux)"
                 />
+                <Line
+                  type="monotone"
+                  dataKey="rain"
+                  stroke="#5F9EA0"
+                  name="Mưa (mm)"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="windSpeed"
+                  stroke="#5F9EA0"
+                  name="Tốc độ gió (m/s)"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="pressure"
+                  stroke="#2F4F4F"
+                  name="Áp suất (pa)"
+                />
               </LineChart>
             </ResponsiveContainer>
           </Card>
