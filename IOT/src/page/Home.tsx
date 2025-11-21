@@ -248,7 +248,7 @@ export default function Home() {
           <Card
             title="Biểu đồ dữ liệu cảm biến (10 lần gần nhất)"
             style={{ height: '100%' }}
-            bodyStyle={{ height: 'calc(100% - 48px)' }}
+            bodyStyle={{ height: 'calc(100% - 48px)', overflow: 'auto' }}
           >
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data}>
@@ -275,18 +275,45 @@ export default function Home() {
                   stroke="#fadb14"
                   name="Ánh sáng (Lux)"
                 />
+              </LineChart>
+            </ResponsiveContainer>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="timestamp" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
                 <Line
                   type="monotone"
                   dataKey="rain"
                   stroke="#5F9EA0"
                   name="Mưa (mm)"
                 />
+              </LineChart>
+            </ResponsiveContainer>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="timestamp" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
                 <Line
                   type="monotone"
                   dataKey="windSpeed"
                   stroke="#5F9EA0"
                   name="Tốc độ gió (m/s)"
                 />
+              </LineChart>
+            </ResponsiveContainer>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="timestamp" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
                 <Line
                   type="monotone"
                   dataKey="pressure"
