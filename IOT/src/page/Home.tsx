@@ -7,6 +7,7 @@ import {
   Fan,
   Lightbulb,
   AirVent,
+  Rainbow,
 } from 'lucide-react';
 import {
   LineChart,
@@ -26,6 +27,9 @@ type Sensor = {
   humidity: number;
   brightness: number;
   timestamp: string;
+  rain: number;
+  windSpeed: number;
+  pressure: number;
 };
 type DeviceState = {
   fan: boolean;
@@ -45,24 +49,33 @@ export default function Home() {
     if (type === 'temperature') {
       if (value < 20) return 'blue';
       if (value > 35) return 'red';
-      return 'green';
     } else if (type === 'humidity') {
       if (value < 40) return 'orange';
       if (value > 80) return 'blue';
-      return 'green';
     } else if (type === 'brightness') {
       if (value < 200) return 'gray';
       if (value > 600) return 'yellow';
-      return 'green';
+    } else if (type === 'rain') {
+      if (value == 0) return 'green';
+      if (value < 500) return 'blue';
+      return 'red';
+    } else if (type === 'windSpeed') {
+      if (value < 100) return 'green';
+      if (value < 500) return 'blue';
+      return 'red';
+    } else if (type === 'pressure') {
+      if (value < 100) return 'blue';
+      if (value < 500) return 'orange';
+      return 'red';
     }
+    return 'green';
   };
-  // realtime update mỗi 3s
   useEffect(() => {
     io.connect();
     io.on('topic/sendData', (newData: Sensor) => {
       setData((prev) => [...prev.slice(-9), newData]);
     });
-  }, []);
+  }, [io]);
   const latest = data.length
     ? data[data.length - 1]
     : {
@@ -70,10 +83,11 @@ export default function Home() {
         humidity: 0,
         brightness: 0,
         id: 0,
+        rain: 0,
+        windSpeed: 0,
+        pressure: 0,
         timestamp: '',
       };
-
-  // Animation inline
   const keyframes = `
     @keyframes spin { 100% { transform: rotate(360deg); } }
     @keyframes pulse { 0%,100% { opacity: 0.8; } 50% { opacity: 1; } }
@@ -149,6 +163,60 @@ export default function Home() {
                   ? 'Chói'
                   : 'Bình thường',
           },
+          {
+            label: 'Mưa',
+            value: latest.rain,
+            icon: (
+              <Rainbow
+                color={getStatusColor('rain', latest.rain)}
+                size={28}
+              />
+            ),
+            unit: 'mm',
+            color: getStatusColor('rain', latest.rain),
+            status:
+              latest.rain == 0
+                ? 'Không mưa'
+                : latest.rain < 500
+                  ? 'Bình thường'
+                  : 'Mưa to',
+          },
+          {
+            label: 'Gió',
+            value: latest.windSpeed,
+            icon: (
+              <AirVent
+                color={getStatusColor('windSpeed', latest.windSpeed)}
+                size={28}
+              />
+            ),
+            unit: 'm/s',
+            color: getStatusColor('windSpeed', latest.windSpeed),
+            status:
+              latest.windSpeed < 100
+                ? 'Yếu'
+                : latest.windSpeed < 500
+                  ? 'Thường'
+                  : 'Mạnh',
+          },
+          {
+            label: 'Áp suất',
+            value: latest.pressure,
+            icon: (
+              <Fan
+                color={getStatusColor('pressure', latest.pressure)}
+                size={28}
+              />
+            ),
+            unit: 'pa',
+            color: getStatusColor('pressure', latest.pressure),
+            status:
+              latest.pressure < 100
+                ? 'Thấp'
+                : latest.pressure < 500
+                  ? 'Trung bình'
+                  : 'Cao',
+          }
         ].map((item, index) => (
           <Col span={8} key={index}>
             <Card>

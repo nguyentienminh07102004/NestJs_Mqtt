@@ -10,6 +10,12 @@ export class DataSensor {
   humidity: number;
   @Column({ nullable: false, type: 'float' })
   brightness: number;
+  @Column({ nullable: false, type: 'float' })
+  rain: number;
+  @Column({ nullable: false, type: 'float' })
+  windSpeed: number;
+  @Column({ nullable: false, type: 'float' })
+  pressure: number;
   @Column({ nullable: false, default: () => 'NOW()' })
   timestamp: Date;
 }
