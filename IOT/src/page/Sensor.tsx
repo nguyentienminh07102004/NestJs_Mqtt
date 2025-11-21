@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 import SearchSensorComponent from '../components/SearchSensorComponent';
 import { API_BASE_URL } from '../configuration/App.constant';
 import type { PagedModel } from '../types/PagedModel';
+import { formatDate } from '../utils/formatDate';
 
 type SensorData = {
   id: string;
@@ -13,16 +14,6 @@ type SensorData = {
   light: string;
   time: string;
 };
-
-export function formatDate(date: Date): string {
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const dd = String(date.getDate()).padStart(2, '0');
-  const hh = String(date.getHours()).padStart(2, '0');
-  const mi = String(date.getMinutes()).padStart(2, '0');
-  const ss = String(date.getSeconds()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
-}
 
 export default function Sensor() {
   const [urlSearchParams] = useSearchParams();
@@ -80,6 +71,33 @@ export default function Sensor() {
       ),
       dataIndex: 'brightness',
       key: 'brightness',
+    },
+    {
+      title: (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          Mưa
+        </div>
+      ),
+      dataIndex: 'rain',
+      key: 'rain',
+    },
+    {
+      title: (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          Tốc độ gió
+        </div>
+      ),
+      dataIndex: 'windSpeed',
+      key: 'windSpeed',
+    },
+    {
+      title: (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          Áp suất
+        </div>
+      ),
+      dataIndex: 'pressure',
+      key: 'pressure',
     },
     {
       title: (

@@ -7,7 +7,7 @@ import { useSearchParams } from 'react-router-dom';
 import SearchHistoryComponent from '../components/SearchHistoryComponent';
 import { API_BASE_URL } from '../configuration/App.constant';
 import type { PagedModel } from '../types/PagedModel';
-import { formatDate } from './Sensor';
+import { formatDate } from '../utils/formatDate';
 
 interface DeviceRecord {
   id: string;

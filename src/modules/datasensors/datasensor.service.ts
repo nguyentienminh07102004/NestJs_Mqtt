@@ -84,6 +84,9 @@ export class DataSensorService implements OnModuleInit {
           { ...filter, temperature: query.value },
           { ...filter, humidity: query.value },
           { ...filter, brightness: query.value },
+          { ...filter, rain: query.value },
+          { ...filter, windSpeed: query.value },
+          { ...filter, pressure: query.value },
         ];
       }
     }

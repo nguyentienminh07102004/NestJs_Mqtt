@@ -16,7 +16,13 @@ export default function SearchSensorComponent({
     | 'humidity-ASC'
     | 'humidity-DESC'
     | 'brightness-ASC'
-    | 'brightness-DESC';
+    | 'brightness-DESC'
+    | 'rain-ASC'
+    | 'rain-DESC'
+    | 'windSpeed-ASC'
+    | 'windSpeed-DESC'
+    | 'pressure-ASC'
+    | 'pressure-DESC';
   const [type, setType] = React.useState<Type>('');
   const [urlSearchParams, setUrlSearchParams] = useSearchParams();
   const [sort, setSort] = React.useState<Sort>('timestamp-ASC');
@@ -48,6 +54,9 @@ export default function SearchSensorComponent({
             { value: 'temperature', label: 'Nhiệt độ' },
             { value: 'humidity', label: 'Độ ẩm' },
             { value: 'brightness', label: 'Ánh sáng' },
+            { value: 'rain', label: 'Mưa' },
+            { value: 'windSpeed', label: 'Tốc độ gió' },
+            { value: 'pressure', label: 'Áp suất' },
             { value: 'timestamp', label: 'Thời gian' },
           ]}
         />
@@ -56,9 +65,9 @@ export default function SearchSensorComponent({
           placeholder="Nhập từ khóa tìm kiếm..."
           style={{ width: 260 }}
           onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-            if (e.key === "Enter") {
-                urlSearchParams.set('value', e.currentTarget.value);
-                setUrlSearchParams(urlSearchParams)
+            if (e.key === 'Enter') {
+              urlSearchParams.set('value', e.currentTarget.value);
+              setUrlSearchParams(urlSearchParams);
             }
           }}
         />
